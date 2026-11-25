@@ -10,7 +10,7 @@
  */
 
 // URL de la implementación del Web App (termina en /exec)
-const URL_PRODUCCION = 'PEGAR_ACA_LA_URL_EXEC';
+const URL_PRODUCCION = 'https://script.google.com/macros/s/AKfycbzbB_a1SaOvj_yfKl9yDiqHg8di-h5YI_RhAXXH5dTa8Aq49IIO_DdTNdEZVDXDtxAA/exec';
 
 // Si la app se abre desde la compu con el servidor de prueba
 // (pruebas/frontend/servidor_local.js), usa el backend simulado.
