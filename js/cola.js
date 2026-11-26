@@ -41,7 +41,8 @@ export const ACCIONES_COLA = {
   empezarPreventivo: () => '🔵 Empezar preventivo',
   terminarPreventivo: () => '✅ Terminar preventivo',
   posponerPreventivo: () => '📅 Posponer preventivo',
-  cargarTotalDiario: () => '💰 Total del día'
+  cargarTotalDiario: () => '💰 Total del día',
+  cargarTrabajoElectrico: (d) => '⚡ Trabajo eléctrico · ' + (d.id_maquina ? nombreMaquina(d.id_maquina) : (d.sector || '') + (d.lugar ? ' · ' + d.lugar : ''))
 };
 
 export const MENSAJE_ENCOLADA = '📵 Sin señal: quedó guardado en el celular y se envía solo cuando vuelva la conexión.';
@@ -144,7 +145,8 @@ async function procesarAhora() {
       it.enviada_en = Date.now();
       it.datos = { id_maquina: (it.datos || {}).id_maquina, id_trabajo: (it.datos || {}).id_trabajo, id_tarea: (it.datos || {}).id_tarea,
         prioridad: (it.datos || {}).prioridad, tipo_falla: (it.datos || {}).tipo_falla, descripcion: (it.datos || {}).descripcion,
-        nueva_fecha: (it.datos || {}).nueva_fecha, lugar: (it.datos || {}).lugar, items: (it.datos || {}).items }; // sin fotos: ya no hacen falta
+        nueva_fecha: (it.datos || {}).nueva_fecha, lugar: (it.datos || {}).lugar, items: (it.datos || {}).items,
+        sector: (it.datos || {}).sector, categoria: (it.datos || {}).categoria }; // sin fotos ni valores: ya no hacen falta
       await guardar(COLA, it);
       total++;
       if (habiaQuedadoGuardada) guardadas++;

@@ -118,10 +118,11 @@ export async function llamarServidor(accion, datos = {}, opciones = {}) {
 /** Pantallas que se pueden ver sin señal (lo último que se vio). */
 const LECTURAS_GUARDABLES = new Set([
   'datosIniciales', 'inicio', 'misTareas', 'listarMaquinas', 'detalleMaquina', 'historialMaquina',
-  'listarFallas', 'listarTrabajos', 'detalleTrabajo', 'listarPreventivos', 'detallePreventivo', 'listarStock'
+  'listarFallas', 'listarTrabajos', 'detalleTrabajo', 'listarPreventivos', 'detallePreventivo', 'listarStock',
+  'misTrabajosElectricos'
 ]);
 /** Pagos y costos nunca se guardan en el celular (decidido con Juan). */
-const CLAVES_PRIVADAS = /costo|precio|monto|pago|mano_obra|proveedor/i;
+const CLAVES_PRIVADAS = /costo|precio|monto|pago|mano_obra|proveedor|valor/i; // valor: trabajos del electricista
 
 function sinPrivados(x) {
   if (Array.isArray(x)) return x.map(sinPrivados);

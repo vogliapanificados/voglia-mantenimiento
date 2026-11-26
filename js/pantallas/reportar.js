@@ -23,17 +23,29 @@ function recientes() {
 }
 
 export async function pantallaReportar(cont) {
+  return elegirMaquina(cont, {
+    pregunta: '¿En qué máquina es la falla?',
+    destino: (m) => 'falla/' + m.id_maquina,
+    nota: (m) => m.incidente ? 'Ya tiene una falla abierta: lo que cargues se suma como nota.' : ''
+  });
+}
+
+/**
+ * Lista de máquinas para elegir una (buscador, las últimas usadas primero y el resto por sector).
+ * opciones: { pregunta, destino(m) → ruta, nota(m) → texto debajo, arriba: elementos antes del buscador }
+ */
+export async function elegirMaquina(cont, { pregunta, destino, nota = () => '', arriba = null }) {
   const datos = await recargarDatos();
   const maquinas = datos.maquinas.filter(m => m.activa === 'SI');
   const ordenSector = (s) => { const i = datos.sectores.findIndex(x => x.sector === s); return i < 0 ? 999 : i; };
   const lista = h('div');
   let texto = '';
 
-  const boton = (m) => h('button', { class: 'tarjeta tarjeta-tocable maquina ' + claseEstado(m.estado), onclick: () => ir('falla/' + m.id_maquina) },
+  const boton = (m) => h('button', { class: 'tarjeta tarjeta-tocable maquina ' + claseEstado(m.estado), onclick: () => ir(destino(m)) },
     h('div', { class: 'fila' },
       h('span', { class: 'negrita crece' }, m.nombre),
       m.estado !== 'Funcionando normalmente' ? h('span', { class: 'etiqueta etiqueta-estado' }, iconoEstado(m.estado) + ' ' + m.estado) : null),
-    m.incidente ? h('div', { class: 'maquina-detalle' }, 'Ya tiene una falla abierta: lo que cargues se suma como nota.') : null);
+    nota(m) ? h('div', { class: 'maquina-detalle' }, nota(m)) : null);
 
   function dibujar() {
     const t = normalizar(texto.trim());
@@ -56,7 +68,8 @@ export async function pantallaReportar(cont) {
   const buscador = h('input', { type: 'search', placeholder: '🔍 Buscar la máquina…', oninput: (ev) => { texto = ev.target.value; dibujar(); } });
   dibujar();
   poner(cont,
-    h('p', { class: 'suave' }, '¿En qué máquina es la falla?'),
+    arriba,
+    h('p', { class: 'suave' }, pregunta),
     h('div', { class: 'buscador' }, buscador),
     lista);
 }

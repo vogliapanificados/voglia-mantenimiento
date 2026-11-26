@@ -165,7 +165,7 @@ export async function pantallaPlanta(cont) {
       g.addEventListener('click', (ev) => {
         ev.stopPropagation();
         if (ubicando) { elegida = m.id_maquina; dibujar(); return; }
-        ir('maquina/' + m.id_maquina);
+        ir((es('electricista') ? 'trabajo-electrico/' : 'maquina/') + m.id_maquina); // el electricista carga el trabajo ahí mismo
       });
       if (ubicando) habilitarArrastre(g, m, svg, sala);
       capa.appendChild(g);

@@ -16,7 +16,7 @@ const RANGO_PRIORIDAD = { 'Máquina parada': 0, 'Funciona con problemas': 1, 'Le
 
 /** Arma, a partir de las cargas pendientes, qué le pasó a cada máquina / trabajo / preventivo. */
 function resumirCola(cola) {
-  const maq = {}, trab = {}, prev = {}, trabajosNuevos = [];
+  const maq = {}, trab = {}, prev = {}, trabajosNuevos = [], electricos = [];
   const yo = estado.usuario ? estado.usuario.nombre : '';
   const deMaq = (id) => (maq[id] = maq[id] || { ops: [] });
   cola.forEach((it) => {
@@ -32,10 +32,11 @@ function resumirCola(cola) {
       case 'terminarPreventivo': prev[d.id_tarea] = { estado: 'Hecho' }; break;
       case 'posponerPreventivo': prev[d.id_tarea] = { estado: 'Pospuesto', proxima_fecha: d.nueva_fecha }; break;
       case 'pedirTrabajo': trabajosNuevos.push({ d, momento: it.momento, quien: yo }); break;
+      case 'cargarTrabajoElectrico': electricos.push({ d, momento: it.momento, quien: yo }); break;
       default: break;
     }
   });
-  return { maq, trab, prev, trabajosNuevos };
+  return { maq, trab, prev, trabajosNuevos, electricos };
 }
 
 /** ¿Es la misma carga? (mismo texto y misma hora: el backend guarda la hora del celular) */
@@ -128,6 +129,9 @@ export function ajustarConCola(accion, params, datos, cola) {
     case 'misTareas':
       ajustarTareas(r, R);
       break;
+    case 'misTrabajosElectricos':
+      if (Array.isArray(r)) sumarElectricos(r, R);
+      break;
     case 'inicio':
       ajustarInicio(r, R);
       break;
@@ -180,6 +184,22 @@ function ajustarInicio(r, R) {
     });
   }
   if (r.tareas) ajustarTareas(r.tareas, R);
+  if (Array.isArray(r.mis_trabajos_elec)) sumarElectricos(r.mis_trabajos_elec, R);
+}
+
+/** Trabajos del electricista cargados que todavía no figuran (se ven arriba, con "⏳"). */
+function sumarElectricos(lista, R) {
+  R.electricos.slice().reverse().forEach(({ d, momento, quien }) => {
+    if (lista.some(t => String(t.descripcion) === String(d.descripcion) && mismaHora(t.fecha, momento))) return; // ya llegó
+    const m = d.id_maquina ? nombreDe(d.id_maquina) : null;
+    lista.unshift({
+      id_trabajo_elec: '', fecha: momento, id_maquina: d.id_maquina || '', maquina: m ? m.nombre : '',
+      sector: d.sector || (m ? m.sector : ''), lugar: d.lugar || '',
+      donde: m ? m.nombre : [d.sector, d.lugar].filter(Boolean).join(' · '),
+      descripcion: d.descripcion, cargado_por: quien, fotos: [],
+      repuestos: (d.repuestos_usados || []).map(u => u.cantidad + ' × ' + u.repuesto).join('; '), _pendiente: true
+    });
+  });
 }
 
 /** Tareas del mecánico / del equipo: mueve lo empezado a "en curso" y saca lo terminado. */

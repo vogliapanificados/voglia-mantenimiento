@@ -13,6 +13,7 @@ import { estado, invalidarDatos } from '../estado.js';
 import { ir } from '../app.js';
 import { etiquetaUrgencia } from './tareas.js';
 import { etiquetaEstadoPrev } from './preventivo.js';
+import { inicioElectricista } from './electricista.js';
 
 export async function pantallaInicio(cont) {
   const d = await llamar('inicio');
@@ -20,6 +21,7 @@ export async function pantallaInicio(cont) {
   const recargar = () => ir('inicio');
   const saludo = h('p', { class: 'saludo' }, saludoDelDia() + ', ' + estado.usuario.nombre.split(' ')[0]);
 
+  if (rol === 'electricista') return poner(cont, saludo, inicioElectricista(d));
   if (rol === 'encargado') return poner(cont, saludo, inicioEncargado(d));
   if (rol === 'mecanico') return poner(cont, saludo, inicioMecanico(d, recargar));
   return poner(cont, saludo, inicioAdmin(d, recargar));

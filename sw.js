@@ -13,7 +13,7 @@
  * ============================================================
  */
 // <<GENERADO: no editar a mano — node herramientas/actualizar_sw.js>>
-const VERSION = '6040c032da30';
+const VERSION = '9925d623dc8a';
 const ARCHIVOS = [
   './',
   'css/estilos.css',
@@ -38,6 +38,7 @@ const ARCHIVOS = [
   'js/instalar.js',
   'js/pantallas/admin.js',
   'js/pantallas/cuenta.js',
+  'js/pantallas/electricista.js',
   'js/pantallas/falla.js',
   'js/pantallas/fallas.js',
   'js/pantallas/historial.js',

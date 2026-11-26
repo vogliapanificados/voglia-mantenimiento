@@ -6,6 +6,7 @@ import { llamar } from '../api.js';
 import { ponerTitulo } from '../app.js';
 import { galeriaFotos } from '../fotos.js';
 import { tarjetaTrabajo } from './trabajos.js';
+import { tarjetaTrabajoElectrico } from './electricista.js';
 
 export async function pantallaHistorial(cont, [idMaquina]) {
   const d = await llamar('historialMaquina', { id_maquina: idMaquina });
@@ -19,6 +20,7 @@ export async function pantallaHistorial(cont, [idMaquina]) {
       dato('Promedio de reparación', r.prom_reparacion_texto || '—')),
     d.incidentes.length ? d.incidentes.map(tarjeta) : vacio('Esta máquina no tiene fallas registradas.'),
     (d.trabajos || []).length ? [h('h2', null, 'Trabajos varios (' + d.trabajos.length + ')'), d.trabajos.map(tarjetaTrabajo)] : null,
+    (d.trabajos_electricos || []).length ? [h('h2', null, '⚡ Trabajos del electricista (' + d.trabajos_electricos.length + ')'), d.trabajos_electricos.map(tarjetaTrabajoElectrico)] : null,
     d.incidentes.length >= 50 ? h('p', { class: 'suave chico centro' }, 'Se muestran las últimas 50 fallas. El resto está en la planilla.') : null);
 }
 

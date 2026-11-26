@@ -50,17 +50,31 @@ export async function pantallaAdmin(cont) {
 // ============================================================
 
 let rangoPagos = null;
+let personaPagos = 'mecanico'; // pestaña: 'mecanico' (totales diarios) | 'electricista' (cada trabajo con su valor)
 
 export async function pantallaPagos(cont) {
   if (!rangoPagos) rangoPagos = { desde: hoyISO().slice(0, 8) + '01', hasta: hoyISO() };
   const desde = h('input', { type: 'date', value: rangoPagos.desde });
   const hasta = h('input', { type: 'date', value: rangoPagos.hasta });
   const cuerpo = h('div');
+  const pestanas = h('div', { class: 'pestanas' });
+  const dibujarPestanas = () => poner(pestanas, [['mecanico', '🔧 Mecánico'], ['electricista', '⚡ Electricista']].map(([k, t]) =>
+    h('button', { class: 'pestana' + (k === personaPagos ? ' elegida' : ''), onclick: () => { personaPagos = k; dibujarPestanas(); buscar(); } }, t)));
+  dibujarPestanas();
 
   async function buscar() {
     rangoPagos = { desde: desde.value, hasta: hasta.value };
     poner(cuerpo, cargando());
     try {
+      if (personaPagos === 'electricista') {
+        const re = await llamar('listarTrabajosElectricos', rangoPagos);
+        poner(cuerpo,
+          h('div', { class: 'tarjeta' },
+            dato('Trabajos', String(re.trabajos.length)),
+            dato('Total del período', re.total_texto)),
+          re.trabajos.length ? re.trabajos.map(t => tarjetaPagoElectrico(t, buscar)) : vacio('No hay trabajos del electricista en estas fechas.'));
+        return;
+      }
       const r = await llamar('listarPagos', rangoPagos);
       poner(cuerpo,
         h('div', { class: 'tarjeta' },
@@ -74,12 +88,45 @@ export async function pantallaPagos(cont) {
   }
 
   poner(cont,
+    pestanas,
     h('div', { class: 'opciones dos' },
       h('label', { class: 'campo', style: { margin: 0 } }, h('span', null, 'Desde'), desde),
       h('label', { class: 'campo', style: { margin: 0 } }, h('span', null, 'Hasta'), hasta)),
     h('button', { class: 'btn btn-secundario', onclick: buscar }, 'Buscar'),
     cuerpo);
   await buscar();
+}
+
+/** Un trabajo del electricista con su valor (solo admin) y "Corregir". */
+function tarjetaPagoElectrico(t, alCambiar) {
+  const corregir = () => {
+    const valor = h('input', { type: 'text', inputmode: 'numeric', value: Number(t.valor).toLocaleString('es-AR') });
+    abrirModal(cerrar => [
+      h('h2', null, 'Corregir valor'),
+      h('p', { class: 'suave chico' }, t.donde + ' · ' + fechaHora(t.fecha) + '. Queda registrado el valor anterior.'),
+      h('label', { class: 'campo' }, h('span', null, 'Valor ($)'), valor),
+      h('button', {
+        class: 'btn', onclick: (ev) => conBoton(ev.currentTarget, async () => {
+          const n = leerMonto(valor.value);
+          if (isNaN(n) || n <= 0) throw new Error('Escribí un valor válido.');
+          const r = await cargar('editarTrabajoElectrico', { id_trabajo_elec: t.id_trabajo_elec, valor: n });
+          aviso(r.mensaje || 'Valor corregido.', 'ok');
+          cerrar();
+          alCambiar();
+        })
+      }, 'Guardar corrección'),
+      h('button', { class: 'btn btn-secundario', onclick: cerrar }, 'Cancelar')]);
+  };
+  return h('div', { class: 'tarjeta' },
+    h('div', { class: 'fila' },
+      h('span', { class: 'negrita crece' }, '⚡ ' + t.donde),
+      h('b', { style: { fontSize: '20px' } }, pesos(t.valor))),
+    h('p', null, t.descripcion),
+    t.repuestos ? h('p', { class: 'suave chico' }, '🔩 ' + t.repuestos) : null,
+    h('p', { class: 'suave chico' }, t.cargado_por + ' · ' + fechaHora(t.fecha)),
+    t.editado_por ? h('p', { class: 'chico', style: { color: '#9a3412' } },
+      '✏️ Corregido por ' + t.editado_por + ' el ' + fechaHora(t.fecha_edicion) + ' (antes: ' + pesos(t.valor_anterior) + ')') : null,
+    h('button', { class: 'btn-link', onclick: corregir }, 'Corregir'));
 }
 
 function tarjetaPago(p, alCambiar) {
@@ -418,11 +465,15 @@ export async function pantallaListas(cont) {
     h('button', { class: 'btn btn-secundario', onclick: () => pedirTexto('Nuevo sector', '', nuevo => cargar('guardarSector', { sector: nuevo })) }, '+ Agregar sector'),
 
     h('h2', null, 'Tipos de falla'),
-    h('div', { class: 'tarjeta' }, h('ul', { class: 'lista' }, datos.tipos_falla.map(t => h('li', { class: 'fila' },
-      h('span', { class: 'crece' }, t),
-      h('button', { class: 'btn-link', onclick: () => pedirTexto('Cambiar nombre', t, nuevo => cargar('guardarTipoFalla', { tipo_falla: nuevo, tipo_anterior: t })) }, 'Editar'),
-      h('button', { class: 'btn-link', style: { color: 'var(--rojo)' }, onclick: () => quitar(t, () => cargar('guardarTipoFalla', { tipo_falla: t, activo: 'NO' })) }, 'Quitar'))))),
-    h('button', { class: 'btn btn-secundario', onclick: () => pedirTexto('Nuevo tipo de falla', '', nuevo => cargar('guardarTipoFalla', { tipo_falla: nuevo })) }, '+ Agregar tipo de falla'),
+    h('p', { class: 'suave chico' }, 'Por categoría. Al reportar, se elige la categoría y después la falla (o se escribe a mano).'),
+    (datos.categorias_falla || []).map(cat => [
+      h('h3', null, ({ 'Eléctrica': '⚡ ', 'Mecánica': '⚙️ ', 'Otra': '❓ ' }[cat] || '') + cat),
+      h('div', { class: 'tarjeta' }, h('ul', { class: 'lista' }, ((datos.fallas_por_categoria || {})[cat] || []).map(t => h('li', { class: 'fila' },
+        h('span', { class: 'crece' }, t),
+        h('button', { class: 'btn-link', onclick: () => pedirTexto('Cambiar nombre', t, nuevo => cargar('guardarTipoFalla', { tipo_falla: nuevo, tipo_anterior: t, categoria: cat })) }, 'Editar'),
+        h('button', { class: 'btn-link', style: { color: 'var(--rojo)' }, onclick: () => quitar(t, () => cargar('guardarTipoFalla', { tipo_falla: t, activo: 'NO' })) }, 'Quitar'))))),
+      h('button', { class: 'btn btn-secundario', onclick: () => pedirTexto('Nueva falla (' + cat + ')', '', nuevo => cargar('guardarTipoFalla', { tipo_falla: nuevo, categoria: cat })) }, '+ Agregar falla ' + cat.toLowerCase())
+    ]),
 
     h('h2', null, 'Causas de falla'),
     h('p', { class: 'suave chico' }, 'Las elige el mecánico al cerrar una reparación.'),

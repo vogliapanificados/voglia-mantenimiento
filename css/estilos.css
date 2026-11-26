@@ -137,6 +137,8 @@ p { margin: 6px 0; }
 /* Opciones grandes para elegir (tipo de falla, prioridad, usuario) */
 .opciones { display: grid; gap: 8px; margin-bottom: 14px; }
 .opciones.dos { grid-template-columns: 1fr 1fr; }
+.opciones.tres { grid-template-columns: 1fr 1fr 1fr; }
+.opciones .ancho-total { grid-column: 1 / -1; }
 .opcion {
   min-height: 54px; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--borde);
   background: var(--tarjeta); font: inherit; font-size: 16px; text-align: left; cursor: pointer; color: var(--texto);

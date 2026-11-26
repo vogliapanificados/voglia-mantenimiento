@@ -202,7 +202,7 @@ export function etiquetaEstado(estado) {
   return h('span', { class: 'etiqueta ' + claseEstado(estado) }, estado);
 }
 
-export const ROLES = { admin: 'Administrador', encargado: 'Encargado', mecanico: 'Mecánico' };
+export const ROLES = { admin: 'Administrador', encargado: 'Encargado', mecanico: 'Mecánico', electricista: 'Electricista' };
 
 /** Quita tildes y pasa a minúsculas (para buscar). */
 export const normalizar = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();

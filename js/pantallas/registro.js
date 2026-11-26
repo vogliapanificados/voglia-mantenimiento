@@ -11,6 +11,7 @@ import { pantallaTrabajos } from './trabajos.js';
 import { pantallaVisitas } from './admin.js';
 import { pantallaPreventivos } from './preventivo.js';
 import { pantallaStockMecanico } from './repuestos.js';
+import { pantallaMisTrabajos } from './electricista.js';
 
 const CLAVE_PESTANA = 'voglia_registro_pestana';
 
@@ -26,6 +27,8 @@ function pestanas() {
 }
 
 export async function pantallaRegistro(cont, [pedida]) {
+  // El electricista solo ve sus trabajos (sin el valor)
+  if (es('electricista')) return pantallaMisTrabajos(cont);
   const lista = pestanas();
   let clave = pedida || sessionStorage.getItem(CLAVE_PESTANA) || 'fallas';
   if (!lista.some(p => p.clave === clave)) clave = 'fallas';

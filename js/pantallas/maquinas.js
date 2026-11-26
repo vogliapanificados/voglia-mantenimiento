@@ -78,7 +78,7 @@ function ordenEstado(m) {
 
 export function tarjetaMaquina(m) {
   const inc = m.incidente;
-  return h('button', { class: 'tarjeta tarjeta-tocable maquina ' + claseEstado(m.estado), onclick: () => ir('maquina/' + m.id_maquina) },
+  return h('button', { class: 'tarjeta tarjeta-tocable maquina ' + claseEstado(m.estado), onclick: () => ir((es('electricista') ? 'trabajo-electrico/' : 'maquina/') + m.id_maquina) },
     h('div', { class: 'fila' },
       h('div', { class: 'maquina-nombre crece' }, m.nombre),
       h('span', { class: 'etiqueta etiqueta-estado' }, m.estado === 'Funcionando normalmente' ? 'Funcionando' : m.estado)),
@@ -135,6 +135,9 @@ export async function pantallaMaquina(cont, [idMaquina]) {
       }
       acciones.push(h('button', { class: 'btn btn-secundario', onclick: () => ir('falla/' + idMaquina) }, '➕ Agregar otra falla / nota'));
     }
+  }
+  if (activa && es('electricista')) {
+    acciones.unshift(h('button', { class: 'btn btn-verde', onclick: () => ir('trabajo-electrico/' + idMaquina) }, '⚡ Cargar un trabajo en esta máquina'));
   }
   if (activa && !externa && es('admin', 'encargado')) {
     acciones.push(h('button', { class: 'btn btn-secundario', onclick: () => ir('pedir-trabajo/' + idMaquina) }, '🛠️ Pedir un trabajo en esta máquina'));

@@ -16,6 +16,7 @@ import { iniciarCola, contar } from './cola.js';
 import { marcarLecturasViejas } from './api.js';
 import { cartelInstalar } from './instalar.js';
 import { pantallaPendientes } from './pantallas/pendientes.js';
+import { pantallaTrabajoElectrico } from './pantallas/electricista.js';
 
 import { pantallaIngreso } from './pantallas/ingreso.js';
 import { pantallaInicio } from './pantallas/inicio.js';
@@ -38,6 +39,7 @@ import {
 } from './pantallas/admin.js';
 
 const TODOS = ['admin', 'encargado', 'mecanico'];
+const CON_ELEC = [...TODOS, 'electricista']; // el electricista (26/11/2026) entra solo a estas
 const ADMIN = ['admin'];
 const ADMIN_MEC = ['admin', 'mecanico'];
 const PIDEN = ['admin', 'encargado'];
@@ -51,19 +53,19 @@ const PIDEN = ['admin', 'encargado'];
  *  form: es un formulario (al volver "atrás" se saltea).
  */
 const RUTAS = [
-  { patron: /^inicio$/, titulo: 'Inicio', fn: pantallaInicio, roles: TODOS, menu: 'inicio' },
-  { patron: /^reportar$/, titulo: 'Reportar una falla', fn: pantallaReportar, roles: TODOS, menu: 'inicio', volver: 'atras', form: true },
+  { patron: /^inicio$/, titulo: 'Inicio', fn: pantallaInicio, roles: CON_ELEC, menu: 'inicio' },
+  { patron: /^reportar$/, titulo: 'Reportar una falla', fn: pantallaReportar, roles: CON_ELEC, menu: 'inicio', volver: 'atras', form: true },
 
-  { patron: /^planta$/, titulo: 'Planta', fn: pantallaPlanta, roles: TODOS, menu: 'planta' },
-  { patron: /^maquinas$/, titulo: 'Máquinas', fn: pantallaMaquinas, roles: TODOS, menu: 'planta', volver: 'planta' },
-  { patron: /^maquina\/([\w-]+)$/, titulo: 'Máquina', fn: pantallaMaquina, roles: TODOS, menu: 'planta', volver: 'atras' },
-  { patron: /^historial\/([\w-]+)$/, titulo: 'Historial', fn: pantallaHistorial, roles: TODOS, menu: 'planta', volver: 'atras' },
-  { patron: /^falla\/([\w-]+)$/, titulo: 'Cargar falla', fn: pantallaFalla, roles: TODOS, menu: 'inicio', volver: 'atras', form: true },
+  { patron: /^planta$/, titulo: 'Planta', fn: pantallaPlanta, roles: CON_ELEC, menu: 'planta' },
+  { patron: /^maquinas$/, titulo: 'Máquinas', fn: pantallaMaquinas, roles: CON_ELEC, menu: 'planta', volver: 'planta' },
+  { patron: /^maquina\/([\w-]+)$/, titulo: 'Máquina', fn: pantallaMaquina, roles: CON_ELEC, menu: 'planta', volver: 'atras' },
+  { patron: /^historial\/([\w-]+)$/, titulo: 'Historial', fn: pantallaHistorial, roles: CON_ELEC, menu: 'planta', volver: 'atras' },
+  { patron: /^falla\/([\w-]+)$/, titulo: 'Cargar falla', fn: pantallaFalla, roles: CON_ELEC, menu: 'inicio', volver: 'atras', form: true },
   { patron: /^pedido\/([\w-]+)$/, titulo: 'Pedir repuestos', fn: pantallaPedido, roles: ADMIN_MEC, menu: 'inicio', volver: 'atras', form: true },
   { patron: /^cierre\/([\w-]+)$/, titulo: 'Cerrar reparación', fn: pantallaCierre, roles: ADMIN_MEC, menu: 'inicio', volver: 'atras', form: true },
   { patron: /^cierre-externa\/([\w-]+)$/, titulo: 'Visita del service', fn: pantallaCierreExterna, roles: ADMIN, menu: 'inicio', volver: 'atras', form: true },
 
-  { patron: /^registro$/, titulo: 'Registro', fn: pantallaRegistro, roles: TODOS, menu: 'registro' },
+  { patron: /^registro$/, titulo: 'Registro', fn: pantallaRegistro, roles: CON_ELEC, menu: 'registro' },
   { patron: /^preventivo\/([\w-]+)$/, titulo: 'Preventivo', fn: pantallaPreventivo, roles: ADMIN_MEC, menu: 'registro', volver: 'atras' },
   { patron: /^terminar-preventivo\/([\w-]+)$/, titulo: 'Terminar preventivo', fn: pantallaTerminarPreventivo, roles: ADMIN_MEC, menu: 'inicio', volver: 'atras', form: true },
   { patron: /^registro\/(fallas|trabajos|preventivos|stock|services)$/, titulo: 'Registro', fn: pantallaRegistro, roles: TODOS, menu: 'registro' },
@@ -75,8 +77,10 @@ const RUTAS = [
 
   { patron: /^total$/, titulo: 'Mi día', fn: pantallaTotal, roles: ['mecanico'], menu: 'total' },
   { patron: /^tablero$/, titulo: 'Indicadores', fn: pantallaIndicadores, roles: ADMIN, menu: 'tablero' },
-  { patron: /^cuenta$/, titulo: 'Mi cuenta', fn: pantallaCuenta, roles: TODOS, menu: 'cuenta', volverAdmin: 'mas' },
-  { patron: /^pendientes$/, titulo: 'Cargas guardadas', fn: pantallaPendientes, roles: TODOS, menu: 'inicio', volver: 'atras' },
+  { patron: /^cuenta$/, titulo: 'Mi cuenta', fn: pantallaCuenta, roles: CON_ELEC, menu: 'cuenta', volverAdmin: 'mas' },
+  { patron: /^trabajo-electrico$/, titulo: 'Cargar un trabajo', fn: pantallaTrabajoElectrico, roles: ['electricista'], menu: 'inicio', volver: 'atras' },
+  { patron: /^trabajo-electrico\/([\w-]+)$/, titulo: 'Cargar un trabajo', fn: pantallaTrabajoElectrico, roles: ['electricista'], menu: 'inicio', volver: 'atras', form: true },
+  { patron: /^pendientes$/, titulo: 'Cargas guardadas', fn: pantallaPendientes, roles: CON_ELEC, menu: 'inicio', volver: 'atras' },
 
   { patron: /^mas$/, titulo: 'Más', fn: pantallaAdmin, roles: ADMIN, menu: 'mas' },
   { patron: /^admin\/pagos$/, titulo: 'Pagos al mecánico', fn: pantallaPagos, roles: ADMIN, menu: 'mas', volver: 'atras' },
@@ -107,7 +111,7 @@ function itemsMenu() {
   const items = [
     { clave: 'inicio', icono: '🏠', texto: 'Inicio' },
     { clave: 'planta', icono: '🏭', texto: 'Planta' },
-    { clave: 'registro', icono: '📋', texto: 'Registro' }
+    { clave: 'registro', icono: '📋', texto: es('electricista') ? 'Mis trabajos' : 'Registro' }
   ];
   if (es('mecanico')) items.push({ clave: 'total', icono: '💰', texto: 'Mi día' });
   if (es('admin')) {

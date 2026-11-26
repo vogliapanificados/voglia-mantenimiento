@@ -62,7 +62,8 @@ function dibujar(d) {
     h('div', { class: 'kpis' },
       numeroGrande({ titulo: 'Mantenimiento', valor: pesos(k.costo_mantenimiento), actual: k.costo_mantenimiento, anterior: a.costo_mantenimiento, formato: pesos,
         ayuda: 'repuestos ' + pesos(k.costo_repuestos) + ' + services ' + pesos(k.costo_services) }),
-      conSector ? null : numeroGrande({ titulo: 'Mano de obra (mecánico)', valor: pesos(k.mano_obra), actual: k.mano_obra, anterior: a.mano_obra, formato: pesos }),
+      conSector ? null : numeroGrande({ titulo: 'Mano de obra', valor: pesos(k.mano_obra), actual: k.mano_obra, anterior: a.mano_obra, formato: pesos,
+        ayuda: 'mecánico ' + pesos(k.mano_obra_mecanico || 0) + ' + electricista ' + pesos(k.mano_obra_electricista || 0) }),
       conSector ? null : numeroGrande({ titulo: 'Total', valor: pesos(k.costo_total), actual: k.costo_total, anterior: a.costo_total, formato: pesos })),
 
     h('h2', null, 'Preventivo'),
@@ -85,6 +86,7 @@ function dibujar(d) {
 
     // ---------- Fallas ----------
     h('h2', null, 'Por qué y cuándo fallan'),
+    grafico({ titulo: 'Por categoría (eléctrica, mecánica, otra)', items: d.por_categoria || [] }),
     grafico({ titulo: 'Por tipo de falla', items: d.por_tipo }),
     grafico({ titulo: 'Por causa', subtitulo: 'De las reparaciones cerradas en el mes.', items: d.por_causa }),
     conSector ? null : grafico({ titulo: 'Por sector', items: d.por_sector }),
