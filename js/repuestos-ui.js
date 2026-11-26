@@ -66,9 +66,8 @@ export function formularioPedido({ catalogo = [], conMaquina = true, stock = [] 
         campo(it, 'cantidad', { inputmode: 'decimal', placeholder: 'Cant.', 'aria-label': 'Cantidad' }),
         campo(it, 'medida', { placeholder: 'Medida / especificación', 'aria-label': 'Medida' }),
         campo(it, 'detalle', { class: 'ancho', placeholder: 'Detalle (opcional)', 'aria-label': 'Detalle' })),
-      conMaquina ? h('label', { class: 'check' },
-        h('input', { type: 'checkbox', checked: it.agregar_catalogo, onchange: (ev) => { it.agregar_catalogo = ev.target.checked; } }),
-        h('span', null, 'Sumarlo a los repuestos típicos de esta máquina')) : null)));
+      // Decidido con Juan: todo repuesto pedido para una máquina queda en su lista (sin casilla)
+      conMaquina ? h('p', { class: 'suave chico' }, '📌 Queda en los repuestos de esta máquina para la próxima vez.') : null)));
   }
 
   const agregarNuevo = () => { nuevos.push({ repuesto: '', cantidad: '1', medida: '', detalle: '', agregar_catalogo: conMaquina }); dibujarNuevos(); };

@@ -11,7 +11,7 @@ import { llamar, cargar } from '../api.js';
 import { es, recargarDatos, invalidarDatos } from '../estado.js';
 import { ir, ponerTitulo } from '../app.js';
 import { abrirEditarMaquina } from './admin.js';
-import { galeriaFotos } from '../fotos.js';
+import { galeriaFotos, galeriaFotosMaquina, selectorFotos, NITIDA } from '../fotos.js';
 import { tarjetaTrabajo } from './trabajos.js';
 import { marcarReciente } from './reportar.js';
 import { tarjetaPreventivo } from './preventivo.js';
@@ -153,8 +153,68 @@ export async function pantallaMaquina(cont, [idMaquina]) {
     (d.trabajos || []).length ? [h('h2', null, 'Trabajos varios'), d.trabajos.map(tarjetaTrabajo)] : null,
     (d.preventivos || []).length && es('admin', 'mecanico') ? [h('h2', null, 'Preventivo'), d.preventivos.map(tarjetaPreventivo)] : null,
     acciones,
+    seccionFotos(m, d.fotos_maquina || []),
     tarjetaFicha(m, d.service),
     puedeReparar && activa && !externa ? seccionCatalogo(idMaquina, d.catalogo) : null);
+}
+
+// ---------- Fotos de la máquina (decidido con Juan: hasta 6, con nombre; solo el admin sube y borra) ----------
+
+const TIPOS_FOTO = ['Máquina', 'Chapa del motor', 'Chapa de la máquina', 'Tablero eléctrico', 'Otra'];
+const MAX_FOTOS_MAQUINA = 6;
+
+function seccionFotos(m, fotos) {
+  const admin = es('admin');
+  if (!fotos.length && !admin) return null;
+  const recargar = () => ir('maquina/' + m.id_maquina);
+  const borrar = async (f) => {
+    const ok = await confirmar({ titulo: 'Borrar foto', texto: '¿Borrás la foto "' + f.tipo + (f.nota ? ' · ' + f.nota : '') + '"? Va a la papelera de Drive.', si: 'Borrar', claseSi: 'btn btn-rojo' });
+    if (!ok) return;
+    try { const r = await cargar('borrarFotoMaquina', { id_foto: f.id_foto }); aviso(r.mensaje, 'ok'); recargar(); }
+    catch (e) { aviso(e.message, 'error'); }
+  };
+  return [
+    h('h2', null, '📷 Fotos' + (fotos.length ? ' (' + fotos.length + ')' : '')),
+    fotos.length ? galeriaFotosMaquina(fotos, admin ? borrar : null)
+      : h('p', { class: 'suave' }, 'Todavía no tiene fotos. Sumá la de la máquina y la de la chapa del motor para tener las especificaciones a mano.'),
+    admin && fotos.length < MAX_FOTOS_MAQUINA
+      ? h('button', { class: 'btn btn-secundario', onclick: () => agregarFotoMaquina(m, recargar) }, '📷 Agregar foto')
+      : null,
+    admin && fotos.length >= MAX_FOTOS_MAQUINA ? h('p', { class: 'suave chico' }, 'Tiene ' + MAX_FOTOS_MAQUINA + ' fotos (el máximo). Borrá una para agregar otra.') : null
+  ];
+}
+
+/** Ventana para subir una foto: qué es, una nota opcional y la foto (con señal: es del admin). */
+function agregarFotoMaquina(m, alGuardar) {
+  let tipo = '';
+  const botonesTipo = h('div', { class: 'opciones' });
+  const dibujarTipos = () => poner(botonesTipo, TIPOS_FOTO.map(t =>
+    h('button', { class: 'opcion' + (t === tipo ? ' elegida' : ''), type: 'button', onclick: () => { tipo = t; dibujarTipos(); } }, t)));
+  dibujarTipos();
+  const nota = h('input', { type: 'text', maxlength: 80, placeholder: 'Nota (opcional): ej. Motor 2, motor de la cuchilla' });
+  const selector = selectorFotos({ maximo: 1, texto: '📷 Sacar o elegir la foto', nitidez: NITIDA });
+  abrirModal(cerrar => [
+    h('h2', null, 'Foto de ' + m.nombre),
+    h('p', { class: 'suave chico' }, '¿Qué es?'),
+    botonesTipo,
+    h('label', { class: 'campo' }, h('span', null, 'Nota'), nota),
+    selector.elemento,
+    h('div', { class: 'fila-botones' },
+      h('button', { class: 'btn btn-secundario', onclick: cerrar }, 'Cancelar'),
+      h('button', {
+        class: 'btn', onclick: (ev) => {
+          if (!tipo) return aviso('Elegí qué es la foto.', 'error');
+          const foto = selector.fotos()[0];
+          if (!foto) return aviso('Falta la foto.', 'error');
+          conBoton(ev.currentTarget, async () => {
+            const r = await cargar('subirFotoMaquina', { id_maquina: m.id_maquina, tipo, nota: nota.value.trim(), foto });
+            aviso(r.mensaje || 'Foto guardada.', 'ok');
+            cerrar();
+            alGuardar();
+          });
+        }
+      }, 'Guardar foto'))
+  ]);
 }
 
 /** Ficha técnica: sector, modelo, serie, año, datos eléctricos y (solo admin) service técnico. */

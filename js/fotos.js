@@ -14,8 +14,11 @@ import { llamar } from './api.js';
 const LADO_MAXIMO = 1280;
 const CALIDAD = 0.72;
 
+/** Fotos de la ficha de la máquina: más nítidas, para poder leer la chapa del motor. */
+export const NITIDA = { lado: 2000, calidad: 0.85 };
+
 /** Achica una imagen (File) y devuelve un data URL JPEG. */
-async function achicar(archivo) {
+async function achicar(archivo, { lado = LADO_MAXIMO, calidad = CALIDAD } = {}) {
   const url = URL.createObjectURL(archivo);
   try {
     const img = await new Promise((resolver, rechazar) => {
@@ -24,12 +27,12 @@ async function achicar(archivo) {
       i.onerror = () => rechazar(new Error('No se pudo leer la foto.'));
       i.src = url;
     });
-    const escala = Math.min(1, LADO_MAXIMO / Math.max(img.naturalWidth, img.naturalHeight));
+    const escala = Math.min(1, lado / Math.max(img.naturalWidth, img.naturalHeight));
     const lienzo = document.createElement('canvas');
     lienzo.width = Math.round(img.naturalWidth * escala);
     lienzo.height = Math.round(img.naturalHeight * escala);
     lienzo.getContext('2d').drawImage(img, 0, 0, lienzo.width, lienzo.height);
-    return lienzo.toDataURL('image/jpeg', CALIDAD);
+    return lienzo.toDataURL('image/jpeg', calidad);
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -39,7 +42,7 @@ async function achicar(archivo) {
  * Selector de fotos. Devuelve { elemento, fotos() } — fotos() da la lista de data URLs.
  * texto: lo que dice el botón.
  */
-export function selectorFotos({ maximo = 3, texto = '📷 Agregar foto' } = {}) {
+export function selectorFotos({ maximo = 3, texto = '📷 Agregar foto', nitidez = null } = {}) {
   const fotos = [];
   const miniaturas = h('div', { class: 'fotos' });
   const entrada = h('input', {
@@ -49,7 +52,7 @@ export function selectorFotos({ maximo = 3, texto = '📷 Agregar foto' } = {}) 
       ev.target.value = '';
       for (const a of archivos) {
         if (fotos.length >= maximo) { aviso('Máximo ' + maximo + ' fotos.', 'error'); break; }
-        try { fotos.push(await achicar(a)); } catch (e) { aviso(e.message, 'error'); }
+        try { fotos.push(await achicar(a, nitidez || undefined)); } catch (e) { aviso(e.message, 'error'); }
       }
       dibujar();
     }
@@ -92,8 +95,33 @@ export function galeriaFotos(ids) {
   }));
 }
 
-function verGrande(id) {
-  const img = h('img', { alt: 'Foto', class: 'foto-grande' });
+/** Foto grande. Tocándola se amplía (para leer datos chicos, como la chapa del motor). */
+function verGrande(id, titulo) {
+  const img = h('img', { alt: titulo || 'Foto', class: 'foto-grande' });
+  const marco = h('div', { class: 'marco-foto', onclick: () => marco.classList.toggle('ampliada') }, img);
   traerFoto(id).then(src => { img.src = src; }).catch(e => aviso(e.message, 'error'));
-  abrirModal(cerrar => [img, h('button', { class: 'btn btn-secundario', onclick: cerrar }, 'Cerrar')]);
+  abrirModal(cerrar => [
+    titulo ? h('h3', null, titulo) : null,
+    marco,
+    h('p', { class: 'suave chico' }, '🔍 Tocá la foto para ampliarla o achicarla.'),
+    h('button', { class: 'btn btn-secundario', onclick: cerrar }, 'Cerrar')]);
+}
+
+/**
+ * Fotos de la ficha de una máquina, cada una con su nombre (Máquina, Chapa del motor…).
+ * fotos: [{ id_foto, tipo, nota, id }] · alBorrar(foto): solo para el admin.
+ */
+export function galeriaFotosMaquina(fotos, alBorrar) {
+  if (!fotos || !fotos.length) return null;
+  return h('div', { class: 'fotos fotos-maquina' }, fotos.map(f => {
+    const nombre = f.tipo + (f.nota ? ' · ' + f.nota : '');
+    const img = h('img', { alt: nombre, loading: 'lazy' });
+    const caja = h('button', { class: 'foto cargando-foto', type: 'button', onclick: () => verGrande(f.id, nombre) }, img);
+    traerFoto(f.id).then(src => { img.src = src; caja.classList.remove('cargando-foto'); })
+      .catch(() => { poner(caja, h('span', { class: 'suave chico' }, 'Sin conexión')); });
+    return h('figure', { class: 'foto-con-nombre' },
+      caja,
+      h('figcaption', null, nombre),
+      alBorrar ? h('button', { class: 'btn-link chico', style: { color: 'var(--rojo)' }, type: 'button', onclick: () => alBorrar(f) }, 'Borrar') : null);
+  }));
 }

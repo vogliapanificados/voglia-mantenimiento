@@ -13,7 +13,7 @@
  * ============================================================
  */
 // <<GENERADO: no editar a mano — node herramientas/actualizar_sw.js>>
-const VERSION = 'fd642ae779c5';
+const VERSION = '6040c032da30';
 const ARCHIVOS = [
   './',
   'css/estilos.css',

@@ -401,3 +401,14 @@ a.franja-item { text-decoration: underline; text-underline-offset: 3px; }
   background-size: 40% 100%; background-repeat: no-repeat; animation: rayita 1s linear infinite;
 }
 @keyframes rayita { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+
+/* ---------- Fotos de la ficha de la máquina ---------- */
+.fotos-maquina { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.foto-con-nombre { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.foto-con-nombre .foto { width: 100%; height: 120px; }
+.foto-con-nombre .foto img { width: 100%; height: 100%; object-fit: cover; }
+.foto-con-nombre figcaption { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.marco-foto { max-height: 70vh; overflow: auto; border-radius: 10px; background: #111; cursor: zoom-in; }
+.marco-foto .foto-grande { display: block; width: 100%; height: auto; max-height: none; }
+.marco-foto.ampliada { cursor: zoom-out; }
+.marco-foto.ampliada .foto-grande { width: 250%; max-width: none; }
