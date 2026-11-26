@@ -39,8 +39,8 @@ export async function pantallaTotal(cont) {
         monto.value = '';
         observacion.value = '';
         poner(resultado, h('div', { class: 'tarjeta', style: { background: 'var(--verde-claro)' } },
-          h('p', { class: 'negrita' }, '✅ ' + (r.mensaje || 'Total enviado.')),
-          h('p', { class: 'chico' }, 'Le llegó el aviso a Juan.')));
+          h('p', { class: 'negrita' }, r.mensaje && r.mensaje.startsWith('📵') ? r.mensaje : '✅ Total enviado.'),
+          h('p', { class: 'chico' }, 'A Juan le llega el aviso. Si ya lo habías cargado hoy, te va a aparecer un aviso en rojo.')));
       } catch (e) {
         if (e.codigo === 'TOTAL_YA_CARGADO') {
           monto.value = '';

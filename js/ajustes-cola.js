@@ -38,12 +38,19 @@ function resumirCola(cola) {
   return { maq, trab, prev, trabajosNuevos };
 }
 
+/** ¿Es la misma carga? (mismo texto y misma hora: el backend guarda la hora del celular) */
+const mismaHora = (a, b) => Math.abs(new Date(a).getTime() - new Date(b).getTime()) < 2000;
+const mismaCarga = (texto, fecha, op, textoOp) => String(texto || '') === String(textoOp || '') && mismaHora(fecha, op.momento);
+
 /** Aplica las operaciones de una máquina sobre su estado e incidente actuales. */
 function aplicarOps(ops, estadoBase, incBase) {
   let est = estadoBase || 'Funcionando normalmente';
   let inc = incBase ? Object.assign({}, incBase) : null;
   ops.forEach((op) => {
     if (op.tipo === 'falla') {
+      // Si los datos ya la traen (llegó a la planilla), no se suma de nuevo
+      if (inc && (mismaCarga(inc.descripcion, inc.fecha_falla, op, op.d.descripcion) ||
+        (inc.notas || []).some(n => mismaCarga(n.nota, n.fecha, op, op.d.descripcion)))) return;
       if (!inc) {
         est = 'En falla';
         inc = {
@@ -59,6 +66,7 @@ function aplicarOps(ops, estadoBase, incBase) {
       est = 'En reparación';
       Object.assign(inc, { estado: 'En reparación', inicio_reparacion: op.momento, mecanico: op.quien, _pendiente: true });
     } else if (op.tipo === 'pedido' && inc) {
+      if ((inc.pedidos || []).some(p => mismaHora(p.fecha, op.momento))) return; // ya figura
       inc.pedidos = (inc.pedidos || []).concat(op.items.map(x => ({ repuesto: x.repuesto, cantidad: x.cantidad, medida: x.medida, detalle: x.detalle, pedido_por: op.quien, fecha: op.momento, _pendiente: true })));
     } else if (op.tipo === 'cerrar' && inc) {
       est = 'Funcionando normalmente';

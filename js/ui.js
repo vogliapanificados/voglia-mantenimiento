@@ -208,4 +208,4 @@ export const ROLES = { admin: 'Administrador', encargado: 'Encargado', mecanico:
 export const normalizar = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /** Marca "⏳ sin enviar": lo cargado sin señal que todavía no llegó a la planilla. */
-export const chipPendiente = () => h('span', { class: 'chip-pendiente', title: 'Guardado en el celular: se envía cuando vuelva la señal' }, '⏳ sin enviar');
+export const chipPendiente = () => h('span', { class: 'chip-pendiente', title: 'Guardado en el celular: se está enviando' }, navigator.onLine === false ? '⏳ sin enviar' : '⏳ enviando');

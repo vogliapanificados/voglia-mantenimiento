@@ -2,7 +2,7 @@
  * Mi cuenta: datos del usuario, cambiar mi PIN y cerrar sesión.
  */
 import { h, poner, aviso, conBoton, confirmar, dato, ROLES } from '../ui.js';
-import { llamar, cargar, borrarSesion } from '../api.js';
+import { llamar, cargar, borrarSesion, olvidarLecturas } from '../api.js';
 import { estado } from '../estado.js';
 import { salir } from '../app.js';
 import { contar } from '../cola.js';
@@ -43,7 +43,7 @@ export async function pantallaCuenta(cont) {
     if (!ok) return;
     await conBoton(boton, async () => {
       try { await llamar('logout'); } catch (e) { /* aunque falle, se cierra en el celular */ }
-      try { await vaciar(LECTURAS); } catch (e) { /* lo guardado para ver sin señal se borra al salir */ }
+      try { olvidarLecturas(); await vaciar(LECTURAS); } catch (e) { /* lo guardado para ver sin señal se borra al salir */ }
       borrarSesion();
       salir();
     });

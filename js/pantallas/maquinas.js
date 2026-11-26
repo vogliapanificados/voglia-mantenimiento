@@ -143,7 +143,7 @@ export async function pantallaMaquina(cont, [idMaquina]) {
 
   poner(cont,
     h('div', { class: 'estado-grande ' + claseEstado(m.estado) }, iconoEstado(m.estado) + ' ' + m.estado),
-    d._pendiente ? h('p', { class: 'suave' }, '⏳ Incluye cargas hechas sin señal que todavía no se enviaron.') : null,
+    d._pendiente ? h('p', { class: 'suave' }, '⏳ Incluye cargas que todavía se están enviando.') : null,
     d._armada_sin_conexion ? h('p', { class: 'suave' }, '📵 Sin conexión: se muestra lo básico de la máquina (el detalle completo aparece cuando vuelva la señal).') : null,
     !activa ? h('div', { class: 'tarjeta' }, h('span', { class: 'etiqueta inactiva' }, 'Dada de baja'),
       ' Esta máquina no aparece en el listado.') : null,

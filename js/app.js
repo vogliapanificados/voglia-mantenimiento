@@ -13,6 +13,7 @@ import { h, poner, cargando, aviso } from './ui.js';
 import { estado, es, iniciarDesdeSesion, invalidarDatos } from './estado.js';
 import { MODO_PRUEBA } from './config.js';
 import { iniciarCola, contar } from './cola.js';
+import { marcarLecturasViejas } from './api.js';
 import { cartelInstalar } from './instalar.js';
 import { pantallaPendientes } from './pantallas/pendientes.js';
 
@@ -175,9 +176,14 @@ export function ponerTitulo(texto) {
 
 let turno = 0; // evita que una pantalla vieja dibuje encima de una nueva
 
-async function mostrar() {
+/**
+ * Dibuja la pantalla de la ruta actual.
+ * silencioso = true: redibuja la MISMA pantalla con datos nuevos, sin "cargando",
+ * sin volver arriba y sin cerrar nada (llegaron datos actualizados del servidor).
+ */
+async function mostrar(silencioso = false) {
   const miTurno = ++turno;
-  document.getElementById('modal').classList.add('oculto');
+  if (!silencioso) document.getElementById('modal').classList.add('oculto');
 
   // Sin sesión → pantalla de ingreso
   if (!estado.usuario) {
@@ -207,16 +213,22 @@ async function mostrar() {
   btnVolver.classList.toggle('oculto', !rutaVolver);
   dibujarMenu(es('admin') && def.menu === 'cuenta' ? 'mas' : def.menu);
   app.classList.remove('sin-menu');
-  window.scrollTo(0, 0);
-
-  poner(app, cargando());
+  const scroll = window.scrollY;
+  if (!silencioso) {
+    window.scrollTo(0, 0);
+    poner(app, cargando());
+  }
   try {
     const contenedor = h('div');
     await def.fn(contenedor, params);
     if (ruta === 'inicio') { const c = cartelInstalar(); if (c) contenedor.prepend(c); }
-    if (miTurno === turno) poner(app, contenedor);
+    if (miTurno === turno) {
+      poner(app, contenedor);
+      if (silencioso) window.scrollTo(0, scroll);
+    }
   } catch (e) {
     if (miTurno !== turno) return;
+    if (silencioso) return; // si falla un redibujo silencioso, queda lo que se veía
     if (e && e.codigo === 'SIN_SESION') return; // lo maneja el evento sesion-vencida
     poner(app,
       h('div', { class: 'vacio' },
@@ -252,13 +264,14 @@ export function salir() {
 // ---------- Franja de estado: sin conexión / cargas sin enviar / con problema ----------
 
 const franja = document.getElementById('franja');
+let sinConexion = false;     // el último pedido al servidor falló por falta de señal
 let mostrandoGuardado = null; // fecha de los datos guardados que se están viendo (o null)
 
 async function dibujarFranja() {
   if (!estado.usuario) { franja.classList.add('oculto'); return; }
   let n = { pendientes: 0, problemas: 0 };
   try { n = await contar(); } catch (e) { /* sin almacenamiento: no se muestra nada */ }
-  const sinRed = navigator.onLine === false || !!mostrandoGuardado;
+  const sinRed = navigator.onLine === false || sinConexion;
   const partes = [];
   if (sinRed) {
     const hora = mostrandoGuardado ? new Date(mostrandoGuardado).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : '';
@@ -272,18 +285,53 @@ async function dibujarFranja() {
 }
 
 window.addEventListener('conexion', (ev) => {
-  mostrandoGuardado = ev.detail.sinConexion ? ev.detail.desde || Date.now() : null;
+  sinConexion = ev.detail.sinConexion;
+  if (!sinConexion) mostrandoGuardado = null;
+  else if (ev.detail.desde) mostrandoGuardado = ev.detail.desde;
   dibujarFranja();
 });
 window.addEventListener('cola-cambio', dibujarFranja);
 window.addEventListener('online', dibujarFranja);
 window.addEventListener('offline', dibujarFranja);
+// ---------- Actualizaciones por detrás ----------
+
+/** ¿Se puede redibujar la pantalla sin molestar? (no hay ventana abierta, no es un formulario, no está escribiendo) */
+function sePuedeRedibujar() {
+  if (!estado.usuario || document.querySelector('#modal:not(.oculto)')) return false;
+  if (esFormulario(location.hash.replace(/^#\/?/, ''))) return false;
+  const activo = document.activeElement;
+  return !(activo && app.contains(activo) && /^(INPUT|TEXTAREA|SELECT)$/.test(activo.tagName));
+}
+let redibujoPendiente = null;
+function redibujarSilencioso() {
+  clearTimeout(redibujoPendiente);
+  redibujoPendiente = setTimeout(() => { if (sePuedeRedibujar()) mostrar(true); }, 250);
+}
+
+// Llegaron datos más nuevos que los que se están viendo
+window.addEventListener('datos-nuevos', redibujarSilencioso);
+// Rayita animada debajo de la barra mientras se actualiza por detrás
+window.addEventListener('actualizando', (ev) => barra.classList.toggle('actualizando', ev.detail));
+
+// Una carga llegó a la planilla: se muestra la respuesta del sistema
+window.addEventListener('carga-enviada', (ev) => {
+  if (ev.detail.mensaje) aviso('✅ ' + ev.detail.mensaje, 'ok', 5);
+});
+// El sistema rechazó una carga: queda en "Cargas con problema"
+window.addEventListener('carga-rechazada', (ev) => {
+  aviso('⚠️ No se pudo cargar "' + ev.detail.descripcion + '": ' + ev.detail.error + ' (está en "Cargas con problema", arriba).', 'error', 12);
+  redibujarSilencioso();
+});
 // Cuando la cola termina de enviar, se actualiza lo que se está viendo
 window.addEventListener('cola-enviada', (ev) => {
   invalidarDatos();
-  aviso('✅ Se enviaron ' + ev.detail + (ev.detail === 1 ? ' carga guardada.' : ' cargas guardadas.'), 'ok', 5);
-  if (!document.querySelector('#modal:not(.oculto)') && !esFormulario(location.hash.replace(/^#\/?/, ''))) mostrar();
+  marcarLecturasViejas();
+  const g = ev.detail.guardadas;
+  if (g) aviso('✅ Se enviaron ' + g + (g === 1 ? ' carga guardada.' : ' cargas guardadas.'), 'ok', 5);
+  redibujarSilencioso();
 });
+// Con señal, lo que tarda más de unos segundos en enviarse aparece en la franja
+setInterval(() => { if (estado.usuario) dibujarFranja(); }, 10000);
 
 // ---------- Service worker (abre la app sin señal) ----------
 

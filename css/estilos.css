@@ -392,3 +392,12 @@ a.franja-item { text-decoration: underline; text-underline-offset: 3px; }
 .instrucciones { margin-top: 10px; }
 .instrucciones summary { cursor: pointer; font-weight: 600; color: var(--primario); padding: 6px 0; }
 .instrucciones ol { margin: 6px 0 0; padding-left: 22px; line-height: 1.6; }
+
+/* Rayita bajo la barra mientras la pantalla se actualiza por detrás */
+.barra { position: sticky; }
+.barra.actualizando::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+  background-size: 40% 100%; background-repeat: no-repeat; animation: rayita 1s linear infinite;
+}
+@keyframes rayita { from { background-position: -40% 0; } to { background-position: 140% 0; } }
